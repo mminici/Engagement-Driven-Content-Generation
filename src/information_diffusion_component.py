@@ -12,10 +12,11 @@ class InformationDiffusionComponent(ABC):
 
 
 class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
-    def __init__(self, data_component, epsilon=0.2, mu=0.5):
+    def __init__(self, data_component, epsilon=0.2, mu=0.5, is_multishot=False):
         self.data_component = data_component
         self.epsilon = epsilon
         self.mu = mu
+        self.is_multishot = is_multishot
 
     def get_opinions(self):
         return self.data_component.get_opinions()
@@ -52,6 +53,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
         disagreement = message - init_opinion
         if abs(disagreement) < self.epsilon:
             init_opinion += self.mu * disagreement
-            self.data_component.update_opinion(node_id, init_opinion)
+            if self.is_multishot:
+                self.data_component.update_opinion(node_id, init_opinion)
             return True, self.mu * disagreement
         return False, 0
