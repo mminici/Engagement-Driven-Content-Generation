@@ -1,0 +1,7 @@
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install conda-forge::transformers
+pip install trl
+conda install jupyter
+conda install -c conda-forge jupyterlab
+pip install peft
+conda install conda-forge::wandb
