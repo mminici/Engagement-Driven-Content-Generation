@@ -1,0 +1,9 @@
+name: socLLM
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - networkx
+  - numpy
+  - scikit-learn
+  - pip

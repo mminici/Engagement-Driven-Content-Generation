@@ -12,11 +12,12 @@ class InformationDiffusionComponent(ABC):
 
 
 class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
-    def __init__(self, data_component, epsilon=0.2, mu=0.5, is_multishot=False):
+    def __init__(self, data_component, epsilon=0.2, mu=0.5, is_multishot=False, with_backfire=False):
         self.data_component = data_component
         self.epsilon = epsilon
         self.mu = mu
         self.is_multishot = is_multishot
+        self.with_backfire = with_backfire
 
     def get_opinions(self):
         return self.data_component.get_opinions()
@@ -49,11 +50,21 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
         return opinion_shift_tot, num_activated_users, susceptible_pool
 
     def receive_message(self, message, node_id):
+        """Returns a tuple (activated_status: bool, opinion_shift)
+        """
         init_opinion = self.data_component.get_opinion(node_id)
         disagreement = message - init_opinion
+        opinion_shift = self.mu * disagreement
         if abs(disagreement) < self.epsilon:
-            init_opinion += self.mu * disagreement
+            init_opinion += opinion_shift
+            activated_status = True
             if self.is_multishot:
                 self.data_component.update_opinion(node_id, init_opinion)
-            return True, self.mu * disagreement
+            return activated_status, opinion_shift
+        elif self.with_backfire:
+            init_opinion -= opinion_shift
+            activated_status = False
+            if self.is_multishot:
+                self.data_component.update_opinion(node_id, init_opinion)
+            return activated_status, - opinion_shift
         return False, 0
