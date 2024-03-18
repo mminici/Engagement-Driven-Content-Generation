@@ -63,7 +63,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
             return activated_status, opinion_shift
         elif self.with_backfire:
             init_opinion -= opinion_shift
-            activated_status = False
+            activated_status = True
             if self.is_multishot:
                 self.data_component.update_opinion(node_id, init_opinion)
             return activated_status, - opinion_shift
