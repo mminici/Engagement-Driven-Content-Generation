@@ -205,7 +205,8 @@ else:
 # GRID EXPERIMENTS
 modularity_grid = [.8, ]  # [.2, .8]
 homophily_grid = [.8, ]  # [.2, .8]
-llm_positions = [0, 1, -2, -1]
+# llm_positions = [0, 1, -2, -1]
+llm_positions = [0]
 
 RESULTS = {}
 
@@ -297,7 +298,7 @@ for modularity in modularity_grid:
             # ---------------------------------------------------------------------
 
             # 5. Training step --------------------------------------------
-
+            print('Step 5...')
             if TRAIN:
                 # We then build the sentiment analysis pipeline, passing the model name and the
                 # sentiment analysis pipeline arguments. Let's also make sure to set the device
@@ -346,10 +347,11 @@ for modularity in modularity_grid:
                     # Run PPO step
                     stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
                     ppo_trainer.log_stats(stats, batch, rewards)
-
+                    break
             # ---------------------------------------------------------------------
 
             # 6. Save step -------------------------------------------------------
+            print('Step 6...')
             saving_path = script_args.output_dir + "llama2-sentiment-propagation"
 
             if not os.path.exists(saving_path):
@@ -360,10 +362,7 @@ for modularity in modularity_grid:
             # ---------------------------------------------------------------------
 
             # 7. Reference model for results -------------------------------------
-            device_ref_model = "cuda:0"
-            ref_model = AutoModelForCausalLMWithValueHead.from_pretrained(script_args.model_name,
-                                                                          device_map=device_ref_model)
-
+            print('Step 7...')
             if LOAD:
                 device_model = "auto"
 
@@ -378,12 +377,10 @@ for modularity in modularity_grid:
 
                 ppo_trainer = PPOTrainer(config, model, None, tokenizer)
 
-            assert list(ref_model.parameters()) == list(model.parameters())
-
             # 8. Results dataset -------------------------------------------------------
             #### get a batch from the dataset
-
             #### 8.1 param setting
+            print('Step 8.1...')
             bs = 16
             game_data = dict()
             dataset.set_format("pandas")
@@ -392,27 +389,41 @@ for modularity in modularity_grid:
             query_tensors = df_batch["input_ids"].tolist()
             gen_kwargs = {"min_length": -1, "top_k": 0.0, "top_p": 1.0, "do_sample": True,
                           "pad_token_id": tokenizer.eos_token_id}
+            with torch.no_grad():
+                #### 8.2 fill results tensors: trained model
+                print('Step 8.2...')
+                response_tensors = []
+                for i in range(bs):
+                    gen_len = output_length_sampler()
+                    output = ppo_trainer.generate(
+                        torch.tensor(query_tensors[i]), max_new_tokens=gen_len, **gen_kwargs
+                    ).squeeze()[-gen_len:]
+                    response_tensors.append(output)
 
-            #### 8.2 fill results tensors: ref, trained model
-            response_tensors_ref = []
-            for i in range(bs):
-                gen_len = output_length_sampler()
-                output = ref_model.generate(
-                    torch.tensor(query_tensors[i], device=device_ref_model).unsqueeze(dim=0), max_new_tokens=gen_len,
-                    **gen_kwargs
-                ).squeeze()[-gen_len:]
-                response_tensors_ref.append(output)
+                print('Step 8.3...')
+                del model
+                del ppo_trainer
+                torch.cuda.empty_cache()
+                gc.collect()
 
-            response_tensors = []
-            for i in range(bs):
-                output = ppo_trainer.generate(
-                    torch.tensor(query_tensors[i]), max_new_tokens=gen_len, **gen_kwargs
-                ).squeeze()[-gen_len:]
-                response_tensors.append(output)
+                #### 8.3 fill results tensors: ref model
+                device_ref_model = "cuda:0"
+                ref_model = AutoModelForCausalLMWithValueHead.from_pretrained(script_args.model_name,
+                                                                              device_map=device_ref_model)
+                response_tensors_ref = []
+                for i in range(bs):
+                    gen_len = output_length_sampler()
+                    output = ref_model.generate(
+                        torch.tensor(query_tensors[i], device=device_ref_model).unsqueeze(dim=0),
+                        max_new_tokens=gen_len,
+                        **gen_kwargs
+                    ).squeeze()[-gen_len:]
+                    response_tensors_ref.append(output)
 
             # ---------------------------------------------------------------------
 
             # 9. Results dataset -------------------------------------------------
+            print('Step 9...')
             #### decode responses
             game_data["response (before)"] = [tokenizer.decode(response_tensors_ref[i]) for i in range(bs)]
             game_data["response (after)"] = [tokenizer.decode(response_tensors[i]) for i in range(bs)]
@@ -446,7 +457,6 @@ for modularity in modularity_grid:
             print(df_results[["rewards (before)", "rewards (after)"]].median())
 
             RESULTS[(modularity, homophily, position, llm_node_id)] = df_results.copy()
-            del model
             del ref_model
             torch.cuda.empty_cache()
             gc.collect()
