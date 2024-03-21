@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class InformationDiffusionComponent(ABC):
@@ -12,12 +13,15 @@ class InformationDiffusionComponent(ABC):
 
 
 class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
-    def __init__(self, data_component, epsilon=0.2, mu=0.5, is_multishot=False, with_backfire=False):
+    def __init__(self, data_component, epsilon=0.2, mu=0.5, is_multishot=False, epsilon_backfire=np.inf):
+        """epsilon: float : higher epsilon corresponds to higher user bound, hence higher possibility to update opinion in the common direction
+           epsilon_backfire: float : higher epsilon_backfire corresponds to higher user backfire bound, hence lower possibility to update opinion in the opposite direction
+        """
         self.data_component = data_component
         self.epsilon = epsilon
         self.mu = mu
         self.is_multishot = is_multishot
-        self.with_backfire = with_backfire
+        self.epsilon_backfire = epsilon_backfire
 
     def get_opinions(self):
         return self.data_component.get_opinions()
@@ -61,7 +65,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
             if self.is_multishot:
                 self.data_component.update_opinion(node_id, init_opinion)
             return activated_status, opinion_shift
-        elif self.with_backfire:
+        elif abs(disagreement) > self.epsilon_backfire:
             init_opinion -= opinion_shift
             activated_status = True
             if self.is_multishot:
