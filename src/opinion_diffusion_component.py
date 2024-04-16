@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import networkx as nx
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, StandardScaler
 import numpy as np
 
 
@@ -28,8 +28,8 @@ class FJDiffusionComponent(OpinionDiffusionComponent):
         self.A = nx.adjacency_matrix(self.data_component.G) # Adj
         self.A = normalize(self.A, axis=1, norm='l1') # Row stochastic Adj
         self.I = np.identity(self.n)
-        self.equilibrium_mtx = np.linalg.inv(2 * self.I - self.A)
-
+        
+    
     def get_opinions(self):
         """Returns initial expressed opinions z = s (inner opinions)
         """
@@ -38,24 +38,57 @@ class FJDiffusionComponent(OpinionDiffusionComponent):
     def get_opinion_mean(self):
         return self.data_component.get_opinion_mean()
 
-    def propagate_message_at_equilibrium(self, message, node_id):
+    def precompute_equilirbium_mtx(self, node_id):
+        """Removes in connections of node_id row
+        """
+        self.A[node_id, :] = 0
+        self.equilibrium_mtx = np.linalg.inv(2 * self.I - self.A)
+
+    def propagate_message_at_equilibrium(self, message, node_id, update_opinions = False):
         """Returns expressed opinions z at equilibrium by
            setting inner opinion (s[id]) of node_id to message.
         """
         self.s[node_id, :] = message
-        z_eq = self.equilibrium_mtx @ self.s
-        opinion_shift_vec = z_eq - self.z
-        self.z = z_eq # Update current opinion to the equilibrium opinions
-        self.data_component.opinions = np.array(z_eq).flatten() # Update data object
-        return np.array(opinion_shift_vec).flatten()
+        scaled_s = StandardScaler().fit_transform(self.s)
+        z_eq = self.equilibrium_mtx @ scaled_s
+        return z_eq
+        
+        # scaled_z = StandardScaler().fit_transform(self.z)
+        # opinion_shift_vec = z_eq - scaled_z
+        # if update_opinions:
+        #     self.z = z_eq # Update current opinion to the equilibrium opinions
+        # self.data_component.opinions = np.array(z_eq).flatten() # Update data object
+        # return np.array(opinion_shift_vec).flatten()
     
     def propagate_message_one_step(self, message, node_id):
-        """Returns expressed opinions z at one step ahead by
-           setting current expressed opinion (z[id]) of node_id to message.
+        pass
+    
+    def polarization_plus_disagreement_at_equilibrium(self, message, node_id):
+        """Returns the sum of polarization and disagreement at equilibrium given the influence of the 
+            immutable opinion of the LLM (node_id)
         """
-        self.z[node_id, :] = message
-        z_next =  1/2 * (self.A @ self.z + self.s) # Eq. (1): (I + I)^-1 = 1/2 * 
-        opinion_shift_vec = z_next - self.z
-        self.z = z_next # Update current opinion to the next
-        self.data_component.opinions = np.array(self.z).flatten() # Update data object
-        return np.array(opinion_shift_vec).flatten()
+        # 1. assign message to llm
+        self.s[node_id, :] = message
+        scaled_s = StandardScaler().fit_transform(self.s)
+
+        # 2. LLM does not update opinion -> remove LLM's infuencers
+        self.A[node_id, :] = 0
+
+        # 3. Compute in one-shot the polarization plus disagreement at equilibirum
+        D_in = np.diag(np.asarray(self.A.sum(axis=0)).flatten())
+        I = np.identity(D_in.shape[0])
+
+        z_1 = np.linalg.inv(2*I-self.A.T) @ scaled_s
+        z_2 = np.linalg.inv(2*I-self.A) @ scaled_s
+        z_3 = np.linalg.inv(2*I-self.A.T) @ (D_in - I) @ z_2
+
+        return (scaled_s.T @ z_1 + 1/2 * scaled_s.T @ z_3).item() # 1/2 correction to the wrong formula (14) in Cinus et al
+
+    @staticmethod
+    def polarization(z) -> float:
+        return np.sum(np.asarray(z).flatten()**2)
+    
+    @staticmethod
+    def disagreement(A, z) -> float:
+        D_in = np.diag(np.asarray(A.sum(axis=0)).flatten())
+        return (1 / 2 * z.T @ (D_in + np.identity(D_in.shape[0]) - 2 * A) @ z).item()
