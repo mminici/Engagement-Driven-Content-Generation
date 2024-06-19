@@ -5,14 +5,17 @@ from synthetic_generator import generate_G_and_opinions
 
 
 class DataComponent:
-    def __init__(self, num_nodes, modularity, homophily):
+    def __init__(self, num_nodes, modularity, homophily, avg_deg, alpha, beta):
         self.neighbors = None
         self.num_nodes = num_nodes
         self.modularity = modularity
         self.homophily = homophily
         self.G, self.opinions, _ = generate_G_and_opinions(N=num_nodes,
+                                                           avg_deg=avg_deg,
                                                            mu=modularity,
-                                                           conformism=homophily)
+                                                           conformism=homophily,
+                                                           alpha=alpha,
+                                                           beta=beta)
 
     def get_num_nodes(self):
         return len(self.opinions)

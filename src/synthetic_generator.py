@@ -1,9 +1,11 @@
 import networkx as nx
 import numpy as np
+import sys
+import random
 
 from utils import Timeout
 
-DEFAULT_AVG_DEG = 12
+DEFAULT_AVG_DEG = 13 # 3
 
 
 def fortunato_benchmark(n, avg_deg=DEFAULT_AVG_DEG, mu=0.1, seed=0, verbose=False, power_law_coef=2.):
@@ -41,10 +43,12 @@ def fortunato_benchmark(n, avg_deg=DEFAULT_AVG_DEG, mu=0.1, seed=0, verbose=Fals
     return G, node2community
 
 
-def assign_opinions(G, node2community, centrism=1, conformism=0.5, distr="beta", innovators_perc=1):
+def assign_opinions(G, node2community, alpha=1, beta=1, centrism=1, conformism=0.5, distr="beta", innovators_perc=1, seed=12121995):
+    np.random.seed(seed)
+    random.seed(seed)
     if distr == "beta":
-        community_opinions = np.random.beta(centrism, centrism, size=(max(node2community) + 1))
-        opinions = np.random.beta(centrism, centrism, size=G.number_of_nodes())
+        community_opinions = np.random.beta(alpha, beta, size=(max(node2community) + 1))
+        opinions = np.random.beta(alpha, beta, size=G.number_of_nodes())
     elif distr == "uniform":
         number_of_innovators = int(G.number_of_nodes() * innovators_perc)
         innovators_opinions = np.random.uniform(0.5, 1., number_of_innovators)
@@ -66,13 +70,14 @@ def assign_opinions(G, node2community, centrism=1, conformism=0.5, distr="beta",
     return opinions
 
 
-def generate_G_and_opinions(N, mu=.1, centrism=1., conformism=0.9, avg_deg=DEFAULT_AVG_DEG, distr="beta", use_lcc=True,
+def generate_G_and_opinions(N, mu=.1, alpha=1, beta=1, centrism=1., conformism=0.9, avg_deg=DEFAULT_AVG_DEG, distr="beta", use_lcc=True,
                             seed=12121995, verbose=False, innovators_perc=.5, power_law_coef=2.):
     G, node2community = fortunato_benchmark(N, avg_deg=avg_deg, mu=mu, seed=seed, verbose=verbose,
                                             power_law_coef=power_law_coef)
     if G is None:
+        print("Graph is none")
         return None, None, None
-    opinions = assign_opinions(G, node2community, centrism=centrism, conformism=conformism, distr=distr,
+    opinions = assign_opinions(G, node2community, alpha=alpha, beta=beta, centrism=centrism, conformism=conformism, distr=distr,
                                innovators_perc=innovators_perc)
     if use_lcc:
         # extracting largest connected component
