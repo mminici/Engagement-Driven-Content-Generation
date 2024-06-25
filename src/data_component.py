@@ -10,7 +10,7 @@ class DataComponent:
         self.num_nodes = num_nodes
         self.modularity = modularity
         self.homophily = homophily
-        self.G, self.opinions, _ = generate_G_and_opinions(N=num_nodes,
+        self.G, self.opinions, self._node2community = generate_G_and_opinions(N=num_nodes,
                                                            avg_deg=avg_deg,
                                                            mu=modularity,
                                                            conformism=homophily,

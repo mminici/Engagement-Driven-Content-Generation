@@ -110,7 +110,7 @@ set_seed(script_args.seed)
 
 
 # Propagation Model
-
+from pathlib import Path
 import os, sys
 
 sys.path.insert(0, "SocialAIGym/src")
@@ -118,31 +118,70 @@ sys.path.insert(0, "SocialAIGym/src")
 from data_component import DataComponent
 from information_diffusion_component import BoundedConfidenceDiffusionComponent
 from opinion_diffusion_component import FJDiffusionComponent
+from graph_utils import *
 
 
-def main(TOPIC, TYPE, PROPAGATION, NETWORK_OPINION):
+def main(TOPIC, TYPE, PROPAGATION, NETWORK_OPINION, 
+         MODULARITY='medium', HOMOPHILY='medium', LLM_pos=0
+    ):
     # synthetic data generator params
 
     num_nodes = 100
-    modularity = 0.5
-    homophily = 0.5
-    avg_deg = 13
+    avg_deg = 10
 
     # bounded confidence model params
     epsilon = 0.2
     mu = 0.5
 
+         
     if NETWORK_OPINION == 'negative':
         alpha = 1
         beta = 10
     elif NETWORK_OPINION == 'positive':
         alpha = 10
         beta = 1
-    else:  # NETWORK_OPINION = "neutral"
+    elif NETWORK_OPINION == 'neutral':
         alpha = 1
         beta = 1
+    else:
+        raise Exception(f"network_opinion {NETWORK_OPINION} not in (positive, negative, neutral)")   
+
+
+    if MODULARITY == 'high':
+        modularity = 0.75
+    elif MODULARITY == 'low':
+        modularity = 0.25
+    elif MODULARITY == 'medium':
+        modularity = 0.5
+    else:
+        raise Exception(f"modularity {MODULARITY} not in (high, low, medium)") 
+
+    if HOMOPHILY == 'high':
+        homophily = 0.75
+    elif HOMOPHILY == 'low':
+        homophily = 0.25
+    elif HOMOPHILY == 'medium':
+        homophily = 0.5
+    else:
+        raise Exception(f"homophily {HOMOPHILY} not in (high, low, medium)")   
+ 
+           
 
     data = DataComponent(num_nodes, modularity, homophily, avg_deg, alpha=alpha, beta=beta)
+
+    if LLM_pos == 0:
+        llm_node_id = 0
+    elif LLM_pos == "echo-low":
+        llm_node_id = LLM_in_echochamber(data, "low")
+    elif LLM_pos == "echo-high":
+        llm_node_id = LLM_in_echochamber(data, "high")
+    elif LLM_pos == "comm-largest":
+        llm_node_id = LLM_in_comm(data, "largest")
+    elif LLM_pos == "comm-smallest":
+        llm_node_id = LLM_in_comm(data, "smallest")
+    elif LLM_pos == "central":
+        llm_node_id = LLM_central(data)
+
 
     # In[7]:
 
@@ -169,6 +208,9 @@ def main(TOPIC, TYPE, PROPAGATION, NETWORK_OPINION):
         fj_minimum = round(min(zoomed_results))
 
     opinions = information_diffusion_model.get_opinions()
+
+    # Statistics of Initial Configuration
+    ## 1. opinions
     print(
         f'Opinions stats \nmean: {opinions.mean()}\nstd: {opinions.std()}\nmin: {opinions.min()}\nmax: {opinions.max()}')
 
@@ -176,6 +218,12 @@ def main(TOPIC, TYPE, PROPAGATION, NETWORK_OPINION):
     plt.xlabel('opinion value')
     plt.ylabel('occurrences')
     plt.show()
+
+    ## 2. graph
+    intial_config_path = Path("../data/intial_config")
+    os.makedirs(intial_config_path, exist_ok=True)
+    filename = f"initial-config-LLM_{LLM_pos}-MODULARITY_{modularity}-HOMOPHILY_{homophily}-alpha_{alpha}-beta_{beta}-avgdeg_{avg_deg}.pdf"
+    plot_graph_config(data, llm_node_id, intial_config_path / filename)
 
     # In[8]:
 
