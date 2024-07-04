@@ -222,7 +222,7 @@ def main(TOPIC, TYPE, PROPAGATION, NETWORK_OPINION,
     ## 2. graph
     intial_config_path = Path("../data/intial_config")
     os.makedirs(intial_config_path, exist_ok=True)
-    filename = f"initial-config-LLM_{LLM_pos}-MODULARITY_{modularity}-HOMOPHILY_{homophily}-alpha_{alpha}-beta_{beta}-avgdeg_{avg_deg}.pdf"
+    filename = f"initial-config-LLM_{LLM_pos}-MODULARITY_{MODULARITY}-HOMOPHILY_{HOMOPHILY}-alpha_{alpha}-beta_{beta}-avgdeg_{avg_deg}.pdf"
     plot_graph_config(data, llm_node_id, intial_config_path / filename)
 
     # In[8]:
