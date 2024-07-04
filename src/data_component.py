@@ -12,7 +12,7 @@ class DataComponent:
         self.homophily = homophily
         self.G, self.opinions, self._node2community = generate_G_and_opinions(N=num_nodes,
                                                            avg_deg=avg_deg,
-                                                           mu=modularity,
+                                                           mu=1-modularity, # mu := Fraction of inter-community edges incident to each node
                                                            conformism=homophily,
                                                            alpha=alpha,
                                                            beta=beta)
