@@ -12,23 +12,26 @@ class DataComponent:
                  modularity=None, homophily=None, 
                  avg_deg=None, 
                  alpha=None, beta=None, 
-                 use_real_data=False):
+                 real_data:str=None):
         self.neighbors = None
         self.num_nodes = num_nodes
         self.modularity = modularity
         self.homophily = homophily
-        if use_real_data:
+        if real_data == "Referendum":
             self.G, self.opinions, self._node2community = load_referendum_dataset()
-        else:
+        elif real_data == "Brexit":
+            self.G, self.opinions, self._node2community = load_brexit_dataset()
+        elif real_data is None:
             self.G, self.opinions, self._node2community = generate_G_and_opinions(N=num_nodes,
                                                             avg_deg=avg_deg,
                                                             mu=1-modularity, # mu := Fraction of inter-community edges incident to each node
                                                             conformism=homophily,
                                                             alpha=alpha,
                                                             beta=beta)
+        else:
+            raise Exception(f"real_data={real_data} not in (Referendum, Brexit, None)")
         
             
-
     def get_num_nodes(self):
         return len(self.opinions)
 
@@ -64,14 +67,18 @@ class DataComponent:
         self.neighbors = neighbors_dict
 
 
-def load_referendum_dataset(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum")):
-    """Loads Refendum dataset from base_folder folder
+load_referendum_dataset = lambda:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum"), hashing="ita_referendum_04")
+load_brexit_dataset = lambda:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Brexit"), hashing="brexit_07")
+
+
+def _load_real_data(base_folder: Path, hashing: str):
+    """Loads dataset from base_folder folder
     """
     # A. Load directed graph
-    g = nx.read_edgelist(base_folder / Path("ita_referendum_04_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
+    g = nx.read_edgelist(base_folder / Path(f"{hashing}_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
 
     # B. Opinions from stance. Cast to [0, 1] range
-    with open(base_folder / Path("ita_referendum_04_node2stance.pkl"), "rb") as f_handle:
+    with open(base_folder / Path(f"{hashing}_node2stance.pkl"), "rb") as f_handle:
         node2stance = pickle.load(f_handle)
     def normalize_array(arr):
         arr_min = np.min(arr)
