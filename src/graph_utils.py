@@ -54,8 +54,9 @@ def plot_graph_config(data, llm_node_id, filename=None):
         plt.savefig(filename, format='pdf', dpi=300, bbox_inches='tight')
     plt.show()
 
-def LLM_central(data, measure="betweenness"):
-    betweenness_centrality = nx.betweenness_centrality(data.get_graph())
+def LLM_central(data, measure="betweenness", betweenness_centrality=None):
+    if betweenness_centrality is None:
+        betweenness_centrality = nx.betweenness_centrality(data.get_graph())
     sorted_by_betweenness = sorted(betweenness_centrality.items(), key=lambda x: x[1], reverse=True)
     llm_node_id = sorted_by_betweenness[0][0]
     return llm_node_id
