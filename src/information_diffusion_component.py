@@ -38,6 +38,9 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
         # init propagation
         opinion_shift_tot = 0
         num_activated_users = 0
+
+        activated_users = set()
+        
         queue = set(self.data_component.get_neighbors(node_id)).intersection(susceptible_pool)
         while len(queue) > 0:
             neighbor_id = queue.pop()
@@ -47,11 +50,12 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
             activated, opinion_shift = self.receive_message(message, neighbor_id)
             # if the node activated on the message, the node will propagate the message to its neighbors
             if activated:
+                activated_users.add({neighbor_id})
                 # add neighbors of neighbor_id to the queue of users who received the message
                 queue = queue.union(set(self.data_component.get_neighbors(neighbor_id)).intersection(susceptible_pool))
                 opinion_shift_tot += opinion_shift
                 num_activated_users += 1
-        return opinion_shift_tot, num_activated_users, susceptible_pool
+        return opinion_shift_tot, num_activated_users, susceptible_pool, activated_users
 
     def receive_message(self, message, node_id):
         """Returns a tuple (activated_status: bool, opinion_shift)
