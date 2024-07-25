@@ -4,6 +4,7 @@ import pickle
 from pathlib import Path
 
 from synthetic_generator import generate_G_and_opinions
+from utils import build_retweet_exposure_graph
 
 
 class DataComponent:
@@ -18,9 +19,13 @@ class DataComponent:
         self.modularity = modularity
         self.homophily = homophily
         if real_data == "Referendum":
-            self.G, self.opinions, self._node2community = load_referendum_dataset()
+            self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=False)
+        elif real_data == "Referendum-exp":
+            self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=True)
         elif real_data == "Brexit":
-            self.G, self.opinions, self._node2community = load_brexit_dataset()
+            self.G, self.opinions, self._node2community = load_brexit_dataset(exposure_graph=False)
+        elif real_data == "Brexit-exp":
+            self.G, self.opinions, self._node2community = load_brexit_dataset(exposure_graph=True)
         elif real_data is None:
             self.G, self.opinions, self._node2community = generate_G_and_opinions(N=num_nodes,
                                                             avg_deg=avg_deg,
@@ -67,15 +72,30 @@ class DataComponent:
         self.neighbors = neighbors_dict
 
 
-load_referendum_dataset = lambda:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum"), hashing="ita_referendum_04")
-load_brexit_dataset = lambda:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Brexit"), hashing="brexit_07")
+load_referendum_dataset = lambda exposure_graph:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum"), hashing="ita_referendum_04", exposure_graph=exposure_graph)
+load_brexit_dataset = lambda exposure_graph:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Brexit"), hashing="brexit_07", exposure_graph=exposure_graph)
 
 
-def _load_real_data(base_folder: Path, hashing: str):
+def _load_real_data(base_folder: Path, hashing: str, exposure_graph: bool=False, reverse: bool=True):
     """Loads dataset from base_folder folder
     """
     # A. Load directed graph
-    g = nx.read_edgelist(base_folder / Path(f"{hashing}_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
+    if not exposure_graph:
+        print("Loading follow graph ..")
+        g = nx.read_edgelist(base_folder / Path(f"{hashing}_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
+        if reverse:
+            print("Reverse edge directionality! \n BEFORE: u->v: u follows v \n NOW u<-v: propagation goes from v to u  )")
+            g = nx.DiGraph.reverse(g)
+    else:
+        print("Building exposure graph ..")
+        o_folder = base_folder / Path(f"{hashing}_propagations_and_polarities.pkl")
+        with open(o_folder, "rb") as f:
+            propagations, _ = pickle.load(f)
+        g = build_retweet_exposure_graph(propagations)
+    print("Graph loaded  ✅")
+    _node_label_types = {type(node).__name__ for node in g.nodes()}
+    print(f"|V|={g.number_of_nodes():_} |E|={g.number_of_edges():_} node types={_node_label_types}")
+
 
     # B. Opinions from stance. Cast to [0, 1] range
     with open(base_folder / Path(f"{hashing}_node2stance.pkl"), "rb") as f_handle:
