@@ -39,7 +39,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
         opinion_shift_tot = 0
         num_activated_users = 0
 
-        activated_users = {}
+        activated_users = set()
         
         queue = set(self.data_component.get_neighbors(node_id)).intersection(susceptible_pool)
         while len(queue) > 0:
