@@ -76,7 +76,7 @@ load_referendum_dataset = lambda exposure_graph:  _load_real_data(base_folder=Pa
 load_brexit_dataset = lambda exposure_graph:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Brexit"), hashing="brexit_07", exposure_graph=exposure_graph)
 
 
-def _load_real_data(base_folder: Path, hashing: str, exposure_graph: bool=False, reverse: bool=True):
+def _load_real_data(base_folder: Path, hashing: str, exposure_graph: bool=False, reverse: bool=False):
     """Loads dataset from base_folder folder
     """
     # A. Load directed graph
