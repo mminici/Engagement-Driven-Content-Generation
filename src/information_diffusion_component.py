@@ -50,7 +50,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
             activated, opinion_shift = self.receive_message(message, neighbor_id)
             # if the node activated on the message, the node will propagate the message to its neighbors
             if activated:
-                activated_users.add({neighbor_id})
+                activated_users.add(neighbor_id)
                 # add neighbors of neighbor_id to the queue of users who received the message
                 queue = queue.union(set(self.data_component.get_neighbors(neighbor_id)).intersection(susceptible_pool))
                 opinion_shift_tot += opinion_shift
