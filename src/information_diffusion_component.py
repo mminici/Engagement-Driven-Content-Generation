@@ -32,7 +32,7 @@ class BoundedConfidenceDiffusionComponent(InformationDiffusionComponent):
     def propagate_message(self, message, node_id, susceptible_pool=None):
         if susceptible_pool is None:
             # initialize a pool of susceptible nodes
-            susceptible_pool = list(range(self.data_component.get_num_nodes()))
+            susceptible_pool = list(self.data_component.get_graph().nodes()) # list(range(self.data_component.get_num_nodes()))
             susceptible_pool = set(susceptible_pool)
             susceptible_pool.remove(node_id)
         # init propagation
