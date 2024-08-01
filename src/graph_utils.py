@@ -24,7 +24,7 @@ def create_pos_from_communities(node2community, g, seed=42):
     return pos
 
 
-def plot_graph_config(data, llm_node_id, filename=None):
+def plot_graph_config(data, llm_node_id=None, draw_colors=True, filename=None):
     fig, ax = plt.subplots(1,1, figsize=(7, 5))
     
     pos = create_pos_from_communities(data._node2community, data.G, seed=42)
@@ -37,7 +37,8 @@ def plot_graph_config(data, llm_node_id, filename=None):
     non_special_nodes = [node for node in data.G.nodes if node != llm_node_id]
     nx.draw_networkx_nodes(data.G, pos, nodelist=non_special_nodes, node_color=node_colors[1:], cmap=cmap, ax=ax)
     # Draw the special node
-    nx.draw_networkx_nodes(data.G, pos, nodelist=[llm_node_id], node_color=np.array([[0, 1, 0, 1]]), node_size=750, ax=ax)
+    if llm_node_id:
+        nx.draw_networkx_nodes(data.G, pos, nodelist=[llm_node_id], node_color=np.array([[0, 1, 0, 1]]), node_size=750, ax=ax)
     # Draw labels if needed
     #nx.draw_networkx_labels(data.G, pos)
 
