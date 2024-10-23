@@ -8,7 +8,7 @@ import pathlib
 # In[1]:
 
 
-hugging_token = "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"
+hugging_token = "<TOKEN>"
 
 # In[2]:
 
@@ -102,7 +102,7 @@ class ScriptArguments:
     )
     batched_gen: Optional[bool] = field(default=False, metadata={"help": "whether to use the batched text gen"})
     save_freq: Optional[int] = field(default=None, metadata={"help": "n steps to save the model"})
-    output_dir: Optional[str] = field(default="/mnt/nas/coppolillo/LLMs/ppo_checkpoints/",
+    output_dir: Optional[str] = field(default="",
                                       metadata={"help": "n steps to save the model"})
     seed: Optional[int] = field(default=0, metadata={"help": "the seed"})
 
@@ -450,7 +450,7 @@ def main(args):
         "eos_token_id": 100_000
     }
 
-    path = f"/mnt/nas/coppolillo/LLMs/"
+    path = "SAVING PATH"  # TO CHANGE
 
     if "brexit" in TOPIC:  # real data
         config_path = f"initial-config-LLM_{LLM_pos}"
