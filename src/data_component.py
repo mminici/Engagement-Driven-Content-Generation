@@ -93,7 +93,7 @@ def _load_real_data(base_folder: Path, hashing: str, exposure_graph: bool=False,
         print("Loading follow graph ..")
         g = nx.read_edgelist(base_folder / Path(f"{hashing}_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
         g_community = None
-        base_community_path = "/home/coppolillo/Desktop/LLMs/SocialAIGym/data/processed/"
+        base_community_path = "<BASE PATH>"
         
         if community == "positive" or community == "negative": # community 0 or 13 of the reduced graph
             print(f"Retrieving the {community} community from the reduced graph")
