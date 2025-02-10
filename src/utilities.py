@@ -88,7 +88,7 @@ def compute_optimal_reward(bc_model, llm_node_id, search_granularity=1e-2):
 
 
 def get_optimal_rewards(TOPIC, create):
-    df_path = os.path.join("/mnt/nas/coppolillo/LLMs/", f"{TOPIC}_optimal_rewards.csv")
+    df_path = os.path.join("[PATH]", f"{TOPIC}_optimal_rewards.csv")
 
     if not os.path.exists(df_path) or create:
 
@@ -205,7 +205,7 @@ def generate_df_scores(TOPIC):
 
     MODEL_NAME = "gemma2"
 
-    path = f"/mnt/nas/coppolillo/LLMs/"
+    path = f"[PATH]]"
 
     results = []
 
@@ -250,8 +250,6 @@ def generate_df_scores(TOPIC):
                 propagation_path = os.path.join(utility_saving_path, "propagation_rewards.npy")
                 rewards_path = os.path.join(utility_saving_path, "total_rewards.npy")
 
-                # /mnt/nas/coppolillo/LLMs/initial-config-LLM_high-degree/gemma2-completion-sentiment-propagation-readability-bcm-brexit-positive
-                # /mnt/nas/coppolillo/LLMs/initial-config-LLM_high-degree/gemma2-completion-sentiment-propagation-readability-bcm-brexit-positive
                 try:
                     texts = np.load(texts_path)
                     sentiment_scores = np.load(sentiment_path)
@@ -441,7 +439,7 @@ def engagement_post_length_correlation(sentiment):
     topic = "brexit"
     LLM_pos = "high-degree"
 
-    path = f"/mnt/nas/coppolillo/LLMs/initial-config-LLM_{LLM_pos}/"
+    path = f"[PATH]" + f"initial-config-LLM_{LLM_pos}/"
     path += f"gemma2-completion-sentiment-propagation-readability-bcm-{topic}-{sentiment}"
 
     generated_posts = np.load(os.path.join(path, "generated_texts.npy"))
