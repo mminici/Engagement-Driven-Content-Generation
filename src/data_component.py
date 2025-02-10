@@ -9,7 +9,6 @@ from utils import build_retweet_exposure_graph
 
 from operator import itemgetter
 
-
 class DataComponent:
     def __init__(self, 
                  num_nodes=None, 
@@ -23,6 +22,10 @@ class DataComponent:
         self.homophily = homophily
         if real_data == "Referendum":
             self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=False, community="")
+        elif real_data == "Referendum-positive":
+            self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=False, community="positive")
+        elif real_data == "Referendum-negative":
+            self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=False, community="negative")
         elif real_data == "Referendum-exp":
             self.G, self.opinions, self._node2community = load_referendum_dataset(exposure_graph=True, community="")
         elif real_data == "Brexit":
@@ -51,7 +54,7 @@ class DataComponent:
         return self.G.copy()
 
     def get_opinions(self):
-        return np.copy(self.opinions[list(self.G.nodes())])
+        return np.copy(self.opinions[list(set(self.G.nodes()))])
         # return np.copy(itemgetter(*set(self.G.nodes()))(self.opinions))
 
     def get_opinion_mean(self):
@@ -81,7 +84,7 @@ class DataComponent:
         self.neighbors = neighbors_dict
 
 
-load_referendum_dataset = lambda exposure_graph:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum"), hashing="ita_referendum_04", exposure_graph=exposure_graph)
+load_referendum_dataset = lambda exposure_graph, community:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Referendum"), hashing="ita_referendum_04", exposure_graph=exposure_graph, community=community)
 load_brexit_dataset = lambda exposure_graph, community:  _load_real_data(base_folder=Path("/mnt/nas/cinus/SocialAIGym/data/raw/Brexit"), hashing="brexit_07", exposure_graph=exposure_graph, community=community)
 
 
@@ -93,11 +96,15 @@ def _load_real_data(base_folder: Path, hashing: str, exposure_graph: bool=False,
         print("Loading follow graph ..")
         g = nx.read_edgelist(base_folder / Path(f"{hashing}_edgelist.txt"), nodetype=int, create_using=nx.DiGraph)
         g_community = None
-        base_community_path = "<BASE PATH>"
+        base_community_path = "[PATH]"
         
         if community == "positive" or community == "negative": # community 0 or 13 of the reduced graph
             print(f"Retrieving the {community} community from the reduced graph")
-            g_community = nx.read_edgelist(os.path.join(base_community_path, f"{community}_community_graph_reduced.npy"), 
+            if "brexit" in hashing:
+                real_data = "brexit"
+            elif "referendum" in hashing:
+                real_data = "referendum"
+            g_community = nx.read_edgelist(os.path.join(base_community_path, f"{real_data}_{community}_community_graph_reduced.npy"),
                                  create_using=nx.DiGraph, edgetype=int, nodetype=int)
             
         if reverse:

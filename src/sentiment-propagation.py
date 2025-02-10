@@ -152,10 +152,10 @@ def main(args):
     epsilon = 0.2
     mu = 0.5
 
-    if "brexit" in TOPIC:
-        print("Using REAL NETWORK")
+    if "brexit" in TOPIC or "referendum" in TOPIC:
+        print(f"Using REAL NETWORK of {TOPIC}")
 
-        data, position_dict, _ = get_brexit_data(TOPIC)
+        data, position_dict = get_real_data(TOPIC)
 
         s = TOPIC.split("-")[1]  # positive or negative
         llm_node_id = position_dict[f"{s}-{LLM_pos}"]
@@ -269,6 +269,8 @@ def main(args):
 
             if "brexit" in TOPIC:
                 prompt = f"Brexit is the most"
+            if "referendum" in TOPIC:
+                prompt = "2016 Italian constitutional referendum is the most"
                 # prompt = f"The impact of {TOPIC.capitalize()} on UK is"
 
         elif TYPE == "generation":
@@ -405,7 +407,7 @@ def main(args):
 
     if TYPE == "completion":
         N_EPOCHS = 80
-        if "brexit" in TOPIC and "negative" in TOPIC:
+        if ("brexit" in TOPIC or "referendum" in TOPIC) and "negative" in TOPIC:
             N_EPOCHS = 500
     elif TYPE == "generation":
         N_EPOCHS = 500
@@ -425,7 +427,7 @@ def main(args):
 
     sentiment_model = pipeline("sentiment-analysis", model="lvwerra/distilbert-imdb")
 
-    if "brexit" in TOPIC:  # real data
+    if "brexit" in TOPIC or "referendum" in TOPIC:  # real data
         # "LLM_pos", "Optimal_reward"
         pass
         # optimal_reward = optimal_rewards[optimal_rewards["LLM_pos"] == LLM_pos]["Optimal_reward"].values[0]
@@ -452,7 +454,7 @@ def main(args):
 
     path = "SAVING PATH"  # TO CHANGE
 
-    if "brexit" in TOPIC:  # real data
+    if "brexit" in TOPIC or "referendum" in TOPIC:  # real data
         config_path = f"initial-config-LLM_{LLM_pos}"
     else:
         config_path = f"initial-config-LLM_{LLM_pos}-MODULARITY_{MODULARITY}-HOMOPHILY_{HOMOPHILY}-NETWORK_OPINION_{NETWORK_OPINION}"
@@ -507,23 +509,9 @@ def main(args):
 
                     readability_scores.append(readabilities)
 
-                    # if PROPAGATION == "bcm":
-
-                    # if TOPIC == "brexit":  # real data
-                    #
-                    #     # predict_proba is around 0 if the text is in favour of Brexit, around 1 otherwise
-                    #     messages_values = [1 - sentiment_model.predict_proba(text) for text in texts]
-                    #
-                    #     # Now 1 is in favour of Brexit, 0 otherwise
-                    #
-                    # else:  # synthetic data
                     sentiment_outputs = sentiment_model(texts)
                     messages_values = [output["score"] if output["label"] == "POSITIVE" else 1 - output["score"]
                                        for output in sentiment_outputs]
-
-                    # elif PROPAGATION == "fj":
-                    #    sentiment_outputs = sentiment_model(texts, **rw_kwargs)
-                    #    messages_values = [output[1]["score"] for output in sentiment_outputs]
 
                     sentiment_scores.extend(messages_values)
 
@@ -545,19 +533,7 @@ def main(args):
 
                             reward = -(pol_dis - fj_minimum) ** 2
 
-                        # if reward > optimal_reward:
-                        # print("ACTUAL REWARD HIGHER THAN OPTIMAL")
-                        # exit(0)
-
                         propagation_rewards.append(reward)
-
-                        # COMBINING PROPAGATION REWARD AND POST READABILITY
-
-                        # HARMONIC MEAN -> DOES NOT WORK
-                        # reward = harmonic_mean([reward, readabilities[i]])
-
-                        # ARITHMETIC MEAN -> COULD WORK (SHOULD BE WEIGHTED)
-                        # reward = (reward + readabilities[i])/2
 
                         # GEOMETRIC MEAN
                         reward = np.sqrt(reward * max(readabilities[i], 0))
@@ -565,9 +541,6 @@ def main(args):
                         total_rewards.append(reward)
 
                         rewards.append(torch.tensor(reward, dtype=torch.float))
-
-                    # torch_readability_scores = [torch.tensor(x, dtype=torch.float) for x in readability_scores[-1]]
-                    # rewards.extend(torch_readability_scores)
 
                     # Run PPO step
                     stats = ppo_trainer.step(question_tensors, response_tensors, rewards)
@@ -669,52 +642,6 @@ def main(args):
 
         print("VANILLA RESULTS SAVED.")
 
-    # # In[43]:
-    #
-    # response_tensors = []
-    #
-    # for i in range(bs):
-    #     output = ppo_trainer.generate(
-    #         torch.tensor(query_tensors[i], device=device), max_new_tokens=gen_len, **gen_kwargs
-    #     ).squeeze()[-gen_len:]
-    #     response_tensors.append(output)
-    #
-    # # In[44]:
-    #
-    # #### decode responses
-    # game_data["response (before)"] = [tokenizer.decode(response_tensors_ref[i]) for i in range(bs)]
-    # game_data["response (after)"] = [tokenizer.decode(response_tensors[i]) for i in range(bs)]
-    #
-    # #### sentiment analysis of query/response pairs before/after
-    # texts = [q + r for q, r in zip(game_data["query"], game_data["response (before)"])]
-    #
-    # game_data_sentiments = [output["score"] if output["label"] == "POSITIVE" else 1 - output["score"] for output in
-    #                         sentiment_model(texts)]
-    # game_data["rewards (before)"] = [information_diffusion_model.propagate_message(message=x,
-    #                                                                                node_id=llm_node_id)[1] for x in
-    #                                  game_data_sentiments]
-    #
-    # texts = [q + r for q, r in zip(game_data["query"], game_data["response (after)"])]
-    #
-    # game_data_sentiments = [output["score"] if output["label"] == "POSITIVE" else 1 - output["score"] for output in
-    #                         sentiment_model(texts)]
-    # game_data["rewards (after)"] = [information_diffusion_model.propagate_message(message=x,
-    #                                                                               node_id=llm_node_id)[1] for x in
-    #                                 game_data_sentiments]
-    #
-    # # store results in a dataframe
-    # df_results = pd.DataFrame(game_data)
-    #
-    # df_path = utility_saving_path + "_df.csv"
-    #
-    # df_results.to_csv(df_path, index=False)
-    # print(df_results)
-    #
-    # print("mean:")
-    # print(df_results[["rewards (before)", "rewards (after)"]].mean())
-    # print()
-    # print("median:")
-    # print(df_results[["rewards (before)", "rewards (after)"]].median())
 
 
 if __name__ == '__main__':
