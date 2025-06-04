@@ -15,8 +15,7 @@ If you use our code, please cite us:
   author={Coppolillo, Erica and Cinus, Federico and Minici, Marco and Bonchi, Francesco and Manco, Giuseppe},
   booktitle={Proceedings of the 31st ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD '25)},
   year={2025},
-  doi={10.1145/3711896.3736932},
-  url={https://github.com/mminici/Engagement-Driven-Content-Generation}
+  doi={10.1145/3711896.3736932}
 }
 ```
 
