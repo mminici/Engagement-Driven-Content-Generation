@@ -37,7 +37,7 @@ Here’s a more detailed look at the technical components:
 
     The LLM agent receives a reward signal based on a composite function designed to encourage both engagement and quality. This reward considers:
 
-   - **Virality/Engagement:** Quantified, for instance, by the number of "active users" who interact with the content at the end of the propagation phase.
+   - **Virality/Engagement:** Quantified by the number of "active users" who interact with the content at the end of the propagation phase.
    - **Content Quality & Fluency:** Assessed using objective metrics. The paper mentions the **Flesch-Kincaid score** as a measure of readability, ensuring the content is understandable and well-formed. The system also aims to keep the content on-topic.
 
 5. **Policy Update via RL:** The calculated reward is used to update the LLM's policy through an RL algorithm. This iterative feedback loop allows the LLM to learn which types of content, styles, or linguistic features lead to higher engagement and positive rewards for specific queries and network conditions. The learning procedure is adaptive to the opinion distribution of the network.
